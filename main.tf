@@ -77,7 +77,7 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "this" {
 
   tags = merge(
     var.tags,
-    { Name = var.name },
+    { Name = "${var.name}-${each.key}" },
     var.tgw_vpc_attachment_tags,
   )
 }
@@ -128,10 +128,10 @@ resource "aws_ec2_transit_gateway_route_table_association" "this" {
 
 resource "aws_ec2_transit_gateway_route_table_propagation" "this" {
   for_each = {
-    for k, v in var.vpc_attachments : k => v if var.create_tgw && try(v.transit_gateway_default_route_table_propagation, true) != true
+    for k, v in var.vpc_attachments : k => v if var.create_tgw && try(v.transit_gateway_default_route_table_propagation, true) != true && try(v.transit_gateway_skip_route_table_propagation, false) != true
   }
 
-  # Create association if it was not set already by aws_ec2_transit_gateway_vpc_attachment resource
+  # Create association if it was not set already by aws_ec2_transit_gateway_vpc_attachment resourcehost_group:
   transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.this[each.key].id
   transit_gateway_route_table_id = var.create_tgw ? aws_ec2_transit_gateway_route_table.this[0].id : try(each.value.transit_gateway_route_table_id, var.transit_gateway_route_table_id)
 }
